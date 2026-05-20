@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>用藥復健提醒</title>
+<meta name="description" content="每日用藥與復健提醒 APP">
+<meta name="theme-color" content="#4A90D9">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="用藥提醒">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%234A90D9'/><text x='96' y='130' font-size='110' text-anchor='middle'>💊</text></svg>">
+<link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22%E7%94%A8%E8%97%A5%E5%BE%A9%E5%81%A5%E6%8F%90%E9%86%92%22%2C%22short_name%22%3A%22%E7%94%A8%E8%97%A5%E6%8F%90%E9%86%92%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F4F7FB%22%2C%22theme_color%22%3A%22%234A90D9%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20192%20192'%3E%3Crect%20width%3D'192'%20height%3D'192'%20rx%3D'40'%20fill%3D'%234A90D9'%2F%3E%3Ctext%20x%3D'96'%20y%3D'130'%20font-size%3D'110'%20text-anchor%3D'middle'%3E%F0%9F%92%8A%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+<style>
+  :root {
+    --primary: #4A90D9;
+    --primary-dark: #2C6FAC;
+    --secondary: #52B788;
+    --danger: #E07A5F;
+    --warning: #F2CC8F;
+    --bg: #F4F7FB;
+    --card: #FFFFFF;
+    --text: #2D3142;
+    --muted: #8B95A5;
+    --border: #E2E8F0;
+    --radius: 14px;
+    --shadow: 0 2px 12px rgba(74,144,217,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 80px; }
+
+  /* Header */
+  header { background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white; padding: 20px 20px 16px; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(44,111,172,0.2); }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+  header .date { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+  header .notif-btn { position: absolute; right: 20px; top: 20px;
+    background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%;
+    width: 38px; height: 38px; font-size: 18px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; }
+
+  /* Tabs */
+  .tabs { display: flex; background: white; border-bottom: 1px solid var(--border);
+    position: sticky; top: 72px; z-index: 99; }
+  .tab { flex: 1; padding: 12px 0; text-align: center; font-size: 13px; font-weight: 500;
+    color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent;
+    transition: all 0.2s; }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* Pages */
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+
+  /* Section title */
+  .section-title { font-size: 13px; font-weight: 600; color: var(--muted);
+    letter-spacing: 0.8px; text-transform: uppercase; margin: 16px 0 10px; }
+
+  /* Reminder Card */
+  .reminder-card { background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 14px; border-left: 4px solid var(--primary);
+    transition: opacity 0.3s; }
+  .reminder-card.done { border-left-color: var(--secondary); opacity: 0.65; }
+  .reminder-card.overdue { border-left-color: var(--danger); }
+  .reminder-card .check { width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; transition: all 0.2s; font-size: 14px; }
+  .reminder-card.done .check { background: var(--secondary); border-color: var(--secondary); color: white; }
+  .reminder-card .info { flex: 1; min-width: 0; }
+  .reminder-card .name { font-size: 15px; font-weight: 600; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; }
+  .reminder-card .detail { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .reminder-card .time-badge { background: var(--bg); border-radius: 8px; padding: 4px 10px;
+    font-size: 13px; font-weight: 600; color: var(--primary); flex-shrink: 0; }
+  .reminder-card.done .name { text-decoration: line-through; }
+
+  /* Type badges */
+  .type-pill { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px;
+    border-radius: 20px; margin-right: 5px; }
+  .type-med { background: #EBF4FF; color: #2C6FAC; }
+  .type-rehab { background: #EDFAF1; color: #2D8B57; }
+
+  /* Progress bar */
+  .progress-wrap { background: white; border-radius: var(--radius); padding: 16px;
+    box-shadow: var(--shadow); margin-bottom: 16px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 13px;
+    margin-bottom: 8px; }
+  .progress-label span:first-child { font-weight: 600; }
+  .progress-label span:last-child { color: var(--muted); }
+  .progress-bar { height: 8px; background: var(--border); border-radius: 100px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 100px; transition: width 0.4s ease; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+  .empty .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; line-height: 1.6; }
+
+  /* Form */
+  .form-card { background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 20px; }
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--muted);
+    margin-bottom: 6px; letter-spacing: 0.3px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 15px; color: var(--text); background: var(--bg);
+    font-family: inherit; outline: none; transition: border 0.2s; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--primary); background: white; }
+  .form-group textarea { resize: vertical; min-height: 70px; }
+
+  /* Type selector */
+  .type-selector { display: flex; gap: 10px; }
+  .type-opt { flex: 1; padding: 10px; border: 2px solid var(--border); border-radius: 10px;
+    text-align: center; cursor: pointer; font-size: 14px; font-weight: 500;
+    transition: all 0.2s; color: var(--muted); }
+  .type-opt.selected.med { border-color: var(--primary); background: #EBF4FF; color: var(--primary); }
+  .type-opt.selected.rehab { border-color: var(--secondary); background: #EDFAF1; color: #2D8B57; }
+
+  /* Day selector */
+  .days-selector { display: flex; gap: 6px; flex-wrap: wrap; }
+  .day-btn { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--border);
+    background: var(--bg); font-size: 13px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; color: var(--muted);
+    transition: all 0.2s; }
+  .day-btn.selected { background: var(--primary); border-color: var(--primary); color: white; }
+
+  /* Buttons */
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white; box-shadow: 0 4px 12px rgba(74,144,217,0.3); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-danger { background: #FEF2F0; color: var(--danger); margin-top: 10px; }
+
+  /* Sticky save bar */
+  .save-bar { position: fixed; bottom: 64px; left: 0; right: 0; padding: 10px 16px; z-index: 10000 !important;
+    background: rgba(244,247,251,0.95); backdrop-filter: blur(8px);
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.08); z-index: 98;
+    display: none; }
+  .save-bar.visible { display: block; }
+
+  /* List page items */
+  .list-item { background: var(--card); border-radius: var(--radius); padding: 14px 16px;
+    margin-bottom: 10px; box-shadow: var(--shadow); display: flex; align-items: center; }
+  .list-item .item-icon { font-size: 22px; margin-right: 12px; }
+  .list-item .item-info { flex: 1; }
+  .list-item .item-name { font-size: 15px; font-weight: 600; }
+  .list-item .item-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .list-item .item-actions { display: flex; gap: 8px; }
+  .icon-btn { background: var(--bg); border: none; border-radius: 8px; padding: 7px;
+    cursor: pointer; font-size: 16px; transition: background 0.2s; }
+  .icon-btn:active { background: var(--border); }
+
+  /* History */
+  .history-item { background: white; border-radius: 10px; padding: 12px 16px;
+    margin-bottom: 8px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 12px; }
+  .history-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .history-dot.done { background: var(--secondary); }
+  .history-dot.skip { background: var(--muted); }
+  .history-info { flex: 1; }
+  .history-name { font-size: 14px; font-weight: 600; }
+  .history-time { font-size: 12px; color: var(--muted); }
+  .history-status { font-size: 12px; font-weight: 600; }
+  .history-status.done { color: var(--secondary); }
+  .history-status.skip { color: var(--muted); }
+
+  /* Alert modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 999; align-items: flex-end; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: white; border-radius: 20px 20px 0 0; padding: 24px 20px;
+    width: 100%; animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .modal p { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+  .modal .modal-icon { font-size: 48px; text-align: center; margin-bottom: 12px; }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-btns .btn { flex: 1; padding: 13px; font-size: 15px; }
+
+  /* Notification toast */
+  .toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+    background: var(--text); color: white; padding: 10px 20px; border-radius: 100px;
+    font-size: 14px; z-index: 9999; opacity: 0; transition: all 0.3s;
+    white-space: nowrap; max-width: 90vw; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Bottom nav */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; z-index: 10000 !important;
+    display: flex; padding: 8px 0 env(safe-area-inset-bottom, 8px);
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.08); z-index: 100; }
+  .nav-item { flex: 1; text-align: center; cursor: pointer; padding: 4px 0;
+    color: var(--muted); transition: color 0.2s; }
+  .nav-item.active { color: var(--primary); }
+  .nav-item .nav-icon { font-size: 22px; }
+  .nav-item .nav-label { font-size: 10px; font-weight: 600; margin-top: 2px; }
+  .nav-item.add-btn .nav-icon-wrap { background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; margin: -12px auto 0; box-shadow: 0 4px 12px rgba(74,144,217,0.4); }
+  .nav-item.add-btn .nav-icon { font-size: 26px; color: white; }
+  .nav-item.add-btn .nav-label { color: var(--primary); margin-top: 4px; }
+
+  /* Frequency row */
+  .freq-row { display: flex; gap: 8px; }
+  .freq-row select { flex: 1; }
+
+  /* Notification setup */
+  .setup-step { display: flex; gap: 12px; margin-bottom: 20px; }
+  .step-num { width: 28px; height: 28px; background: var(--primary); color: white;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+  .step-body { flex: 1; }
+  .step-body b { font-size: 15px; }
+  .step-body p { font-size: 13px; color: var(--muted); margin: 4px 0 8px; }
+  .setup-link { display: inline-block; padding: 8px 16px; background: var(--primary);
+    color: white; border-radius: 20px; text-decoration: none; font-size: 14px;
+    font-weight: 600; margin-right: 8px; margin-bottom: 4px; }
+  .topic-box { background: var(--bg); padding: 10px 14px; border-radius: 8px; margin: 8px 0;
+    font-family: monospace; font-size: 15px; letter-spacing: 1px; user-select: all; }
+  .cron-card { background: var(--bg); border-radius: 10px; padding: 12px 14px;
+    margin-bottom: 10px; border-left: 3px solid var(--primary); }
+  .cron-card-header { display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+  .cron-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 4px; font-size: 12px; }
+  .cron-label { color: var(--muted); width: 60px; flex-shrink: 0; padding-top: 2px; }
+  .cron-val { background: white; border-radius: 4px; padding: 2px 6px; font-family: monospace;
+    font-size: 12px; word-break: break-all; flex: 1; }
+  .copy-btn { width: 100%; margin-top: 8px; padding: 8px; border: none; border-radius: 8px;
+    background: var(--primary); color: white; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; }
+  .copy-btn.copied { background: var(--secondary); }
+  .notif-modal .modal { max-height: 85vh; overflow-y: auto; padding-bottom: env(safe-area-inset-bottom, 20px); }
+  .app-url-row { display: flex; gap: 8px; margin-top: 6px; }
+  .app-url-row input { flex: 1; padding: 8px 12px; border: 1.5px solid var(--border);
+    border-radius: 8px; font-size: 13px; background: white; font-family: monospace; }
+  .app-url-row button { padding: 8px 12px; border: none; border-radius: 8px;
+    background: var(--secondary); color: white; font-size: 13px; font-weight: 600;
+    cursor: pointer; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💊 用藥復健提醒</h1>
+  <div class="date" id="headerDate"></div>
+  <button class="notif-btn" onclick="openNotifSetup()" title="設定推播通知">🔔</button>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showPage('today', this)">今日</div>
+  <div class="tab" onclick="showPage('list', this)">提醒清單</div>
+  <div class="tab" onclick="showPage('history', this)">歷史記錄</div>
+</div>
+
+<!-- TODAY PAGE -->
+<div id="page-today" class="page active">
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>今日完成進度</span>
+      <span id="progressText">0 / 0</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+  <div id="todayMed"></div>
+  <div id="todayRehab"></div>
+  <div id="todayEmpty" class="empty" style="display:none">
+    <div class="icon">🌟</div>
+    <p>今日沒有提醒<br>點下方「＋」新增用藥或復健項目</p>
+  </div>
+</div>
+
+<!-- LIST PAGE -->
+<div id="page-list" class="page">
+  <div id="listContent"></div>
+  <div id="listEmpty" class="empty" style="display:none">
+    <div class="icon">📋</div>
+    <p>尚未建立任何提醒<br>點下方「＋」開始新增</p>
+  </div>
+</div>
+
+<!-- ADD PAGE -->
+<div id="page-add" class="page">
+  <div class="form-card">
+    <div class="form-group">
+      <label>類型</label>
+      <div class="type-selector">
+        <div class="type-opt med selected" id="typeMed" onclick="selectType('med')">💊 用藥</div>
+        <div class="type-opt rehab" id="typeRehab" onclick="selectType('rehab')">🏃 復健</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label id="nameLabel">藥品名稱</label>
+      <input type="text" id="formName" placeholder="例如：阿斯匹靈、魚油…" maxlength="30">
+    </div>
+    <div class="form-group" id="doseGroup">
+      <label>劑量 / 說明</label>
+      <input type="text" id="formDose" placeholder="例如：1錠、飯後服用…" maxlength="40">
+    </div>
+    <div class="form-group">
+      <label>提醒時間</label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;" id="timesContainer">
+        <input type="time" id="formTime1" style="flex:1; min-width:120px;">
+      </div>
+      <button onclick="addTimeField()" style="margin-top:8px; background:none; border:none;
+        color:var(--primary); font-size:13px; font-weight:600; cursor:pointer;">＋ 加入第二個時間</button>
+    </div>
+    <div class="form-group">
+      <label>頻率</label>
+      <div class="freq-row">
+        <select id="formFreq" onchange="updateDaySelector()">
+          <option value="daily">每天</option>
+          <option value="weekly">指定星期</option>
+          <option value="interval">每隔幾天</option>
+        </select>
+        <input type="number" id="formInterval" min="2" max="30" value="2"
+          style="width:80px; display:none;" placeholder="天數">
+      </div>
+    </div>
+    <div class="form-group" id="dayGroup" style="display:none">
+      <label>選擇星期</label>
+      <div class="days-selector">
+        <div class="day-btn" onclick="toggleDay(this,'0')">日</div>
+        <div class="day-btn" onclick="toggleDay(this,'1')">一</div>
+        <div class="day-btn" onclick="toggleDay(this,'2')">二</div>
+        <div class="day-btn" onclick="toggleDay(this,'3')">三</div>
+        <div class="day-btn" onclick="toggleDay(this,'4')">四</div>
+        <div class="day-btn" onclick="toggleDay(this,'5')">五</div>
+        <div class="day-btn" onclick="toggleDay(this,'6')">六</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>備註（選填）</label>
+      <textarea id="formNote" placeholder="例如：飯後30分鐘、配大量水…" rows="2"></textarea>
+    </div>
+    <div id="editActions" style="display:none">
+      <button class="btn btn-danger" onclick="deleteReminder()">刪除此提醒</button>
+    </div>
+    <div style="height:70px"></div>
+  </div>
+</div>
+
+<!-- Sticky Save Bar (shown when add page is active) -->
+<div class="save-bar" id="saveBar">
+  <button class="btn btn-primary" onclick="saveReminder()">💾 儲存提醒</button>
+</div>
+
+<!-- HISTORY PAGE -->
+<div id="page-history" class="page">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <span class="section-title" style="margin:0">歷史記錄</span>
+    <button onclick="clearHistory()" style="background:none; border:none; color:var(--danger);
+      font-size:13px; cursor:pointer; font-weight:600;">清除全部</button>
+  </div>
+  <div id="historyContent"></div>
+  <div id="historyEmpty" class="empty" style="display:none">
+    <div class="icon">📅</div>
+    <p>還沒有任何記錄</p>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <div class="nav-item active" id="nav-today" onclick="showPage('today', null, 'today')">
+    <div class="nav-icon">🏠</div>
+    <div class="nav-label">今日</div>
+  </div>
+  <div class="nav-item" id="nav-list" onclick="showPage('list', null, 'list')">
+    <div class="nav-icon">📋</div>
+    <div class="nav-label">清單</div>
+  </div>
+  <div class="nav-item add-btn" id="nav-add" onclick="openAdd()">
+    <div class="nav-icon-wrap"><div class="nav-icon">＋</div></div>
+    <div class="nav-label">新增</div>
+  </div>
+  <div class="nav-item" id="nav-history" onclick="showPage('history', null, 'history')">
+    <div class="nav-icon">📅</div>
+    <div class="nav-label">記錄</div>
+  </div>
+  <div class="nav-item" onclick="showPage('add', null, 'add')" style="display:none"></div>
+</nav>
+
+<!-- Notification Setup Modal -->
+<div class="modal-overlay notif-modal" id="notifSetupModal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <h3 style="font-size:17px;">🔔 設定手機推播通知</h3>
+      <button onclick="document.getElementById('notifSetupModal').classList.remove('show')"
+        style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">✕</button>
+    </div>
+
+    <div class="setup-step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <b>安裝 ntfy App</b>
+        <p>免費推播 App，手機鎖屏、App 關閉照樣收到通知</p>
+        <a class="setup-link" href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank">📱 App Store</a>
+      </div>
+    </div>
+
+    <div class="setup-step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <b>訂閱你的專屬頻道</b>
+        <div class="topic-box" id="topicDisplay"></div>
+        <a class="setup-link" id="ntfySubscribeBtn" href="#">一鍵訂閱（開啟 ntfy App）</a>
+      </div>
+    </div>
+
+    <div class="setup-step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <b>設定自動定時發送</b>
+        <p>前往 <a href="https://cron-job.org" target="_blank" style="color:var(--primary);font-weight:600;">cron-job.org</a> 免費註冊，每個時段新增一個排程。<br>
+        點「複製設定」可快速填入。</p>
+        <div style="margin-top:4px;font-size:12px;color:var(--muted);">App 的連結網址（有 HTTPS 主機後再填）：</div>
+        <div class="app-url-row">
+          <input type="text" id="appUrlInput" placeholder="http://MacBook-Air.local:8765">
+          <button onclick="saveAppUrl()">儲存</button>
+        </div>
+        <div id="cronJobsDisplay" style="margin-top:14px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Alarm Modal -->
+<div class="modal-overlay" id="alarmModal">
+  <div class="modal">
+    <div class="modal-icon" id="alarmIcon">💊</div>
+    <h3 id="alarmTitle">提醒時間到！</h3>
+    <p id="alarmDesc">請確認是否已服用／完成</p>
+    <div class="modal-btns">
+      <button class="btn" style="background:#FEF2F0; color:var(--danger);" onclick="snoozeAlarm()">延後10分</button>
+      <button class="btn btn-primary" onclick="confirmAlarm()">已完成 ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────
+const NTFY_TOPIC = localStorage.getItem('ntfyTopic') || 'med-jec-7k4x9m2p';
+let APP_URL = localStorage.getItem('appUrl') || 'http://MacBook-Air.local:8765';
+
+// ── Data ──────────────────────────────────────────────────────────
+const DEFAULT_REMINDERS = [{"id":"1779076323609","type":"med","name":"中藥＆保健食品","dose":"飯前吃","times":["10:00","17:00"],"time":"10:00","freq":"daily","days":[],"interval":2,"note":"飯前要吃","createdAt":"2026-05-18T03:52:03.609Z"},{"id":"1779076431331","type":"med","name":"鈣片＆消炎","dose":"各一","times":["11:00","19:00"],"time":"11:00","freq":"daily","days":[],"interval":2,"note":"飯後30分鐘","createdAt":"2026-05-18T03:53:51.331Z"},{"id":"1779076543630","type":"rehab","name":"深蹲/金雞獨立","dose":"30下/組/5分鐘一次","times":["12:00","20:00"],"time":"12:00","freq":"daily","days":[],"interval":2,"note":"","createdAt":"2026-05-18T03:55:43.630Z"},{"id":"1779077435252","type":"rehab","name":"盤腿拉筋","dose":"一邊五分鐘","times":["22:30"],"time":"22:30","freq":"daily","days":[],"interval":2,"note":"","createdAt":"2026-05-18T04:10:35.252Z"}];
+let reminders = JSON.parse(localStorage.getItem('reminders') || 'null') || JSON.parse(JSON.stringify(DEFAULT_REMINDERS));
+let todayLog  = JSON.parse(localStorage.getItem('todayLog')  || '{}');
+let history   = JSON.parse(localStorage.getItem('history')  || '[]');
+let editingId = null;
+let currentAlarm = null;
+let alarmTimers = [];
+let firedAlarms = {}; // key: id_HH:MM_date → true, prevents double-fire
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx || audioCtx.state === 'closed') {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioCtx;
+}
+// Warm up AudioContext on first user tap (iOS requirement)
+document.addEventListener('touchstart', () => { try { getAudioCtx().resume(); } catch(e){} }, { once: true });
+
+const DAYS = ['日','一','二','三','四','五','六'];
+
+// ── Init ──────────────────────────────────────────────────────────
+function init() {
+  resetDailyLog();
+  updateHeader();
+  renderToday();
+  renderList();
+  renderHistory();
+  scheduleAlarms();
+}
+
+function resetDailyLog() {
+  const today = dateKey();
+  if (todayLog._date !== today) {
+    history = history.concat(
+      Object.entries(todayLog)
+        .filter(([k]) => k !== '_date')
+        .map(([k, v]) => ({ id: k, status: v, date: todayLog._date || today, ...getReminderById(k) }))
+    ).slice(-200);
+    todayLog = { _date: today };
+    save();
+  }
+}
+
+function getReminderById(id) {
+  const r = reminders.find(r => r.id == id);
+  return r ? { name: r.name, type: r.type } : { name: '已刪除', type: 'med' };
+}
+
+function dateKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function updateHeader() {
+  const now = new Date();
+  const opts = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+  document.getElementById('headerDate').textContent = now.toLocaleDateString('zh-TW', opts);
+}
+
+function save() {
+  localStorage.setItem('reminders', JSON.stringify(reminders));
+  localStorage.setItem('todayLog',  JSON.stringify(todayLog));
+  localStorage.setItem('history',   JSON.stringify(history));
+}
+
+// ── Check if reminder is due today ───────────────────────────────
+function isDueToday(r) {
+  const dow = new Date().getDay();
+  if (r.freq === 'daily') return true;
+  if (r.freq === 'weekly') return (r.days || []).includes(String(dow));
+  if (r.freq === 'interval') {
+    const created = new Date(r.createdAt);
+    const diff = Math.floor((new Date() - created) / 86400000);
+    return diff % (r.interval || 2) === 0;
+  }
+  return true;
+}
+
+// ── Render Today ──────────────────────────────────────────────────
+function getTodaySlots() {
+  // Flatten reminders × times into individual slots
+  return reminders.filter(isDueToday).flatMap(r =>
+    (r.times || [r.time]).filter(Boolean).map(t => ({ r, t }))
+  ).sort((a, b) => a.t.localeCompare(b.t));
+}
+
+function renderToday() {
+  const slots = getTodaySlots();
+  const total = slots.length;
+  const doneCount = slots.filter(({ r, t }) => todayLog[r.id + '_' + t] === 'done').length;
+
+  document.getElementById('progressText').textContent = `${doneCount} / ${total}`;
+  document.getElementById('progressFill').style.width = total ? `${(doneCount/total)*100}%` : '0%';
+  document.getElementById('todayEmpty').style.display = total ? 'none' : 'block';
+
+  const medSlots = slots.filter(s => s.r.type === 'med');
+  const rehSlots = slots.filter(s => s.r.type === 'rehab');
+  document.getElementById('todayMed').innerHTML = medSlots.length
+    ? `<div class="section-title">💊 用藥</div>` + medSlots.map(s => cardHTML(s.r, s.t)).join('')
+    : '';
+  document.getElementById('todayRehab').innerHTML = rehSlots.length
+    ? `<div class="section-title">🏃 復健</div>` + rehSlots.map(s => cardHTML(s.r, s.t)).join('')
+    : '';
+}
+
+function cardHTML(r, t) {
+  const key = r.id + '_' + t;
+  const done = todayLog[key] === 'done';
+  const now = new Date();
+  const [h, m] = t.split(':').map(Number);
+  const due = new Date(); due.setHours(h, m, 0, 0);
+  const overdue = !done && due < now;
+  return `
+  <div class="reminder-card ${done?'done':''} ${overdue&&!done?'overdue':''}" id="card-${r.id}_${t.replace(':','_')}">
+    <div class="check" onclick="toggleDone('${r.id}','${t}')">${done ? '✓' : ''}</div>
+    <div class="info">
+      <div class="name">${r.name}</div>
+      <div class="detail">${r.dose ? `<b>${r.dose}</b>` : ''}${r.note ? ` · ${r.note}` : ''}</div>
+    </div>
+    <div class="time-badge">${t}</div>
+  </div>`;
+}
+
+function toggleDone(id, t) {
+  const key = id + '_' + t;
+  todayLog[key] = todayLog[key] === 'done' ? undefined : 'done';
+  if (!todayLog[key]) delete todayLog[key];
+  save();
+  renderToday();
+  showToast(todayLog[key] === 'done' ? '✅ 已標記完成' : '↩ 已取消標記');
+}
+
+// ── Render List ───────────────────────────────────────────────────
+function renderList() {
+  const el = document.getElementById('listContent');
+  document.getElementById('listEmpty').style.display = reminders.length ? 'none' : 'block';
+  if (!reminders.length) { el.innerHTML = ''; return; }
+
+  const meds = reminders.filter(r => r.type === 'med');
+  const rehs = reminders.filter(r => r.type === 'rehab');
+  let html = '';
+  if (meds.length) html += `<div class="section-title">💊 用藥</div>` + meds.map(listItemHTML).join('');
+  if (rehs.length) html += `<div class="section-title">🏃 復健</div>` + rehs.map(listItemHTML).join('');
+  el.innerHTML = html;
+}
+
+function listItemHTML(r) {
+  const freqLabel = { daily: '每天', weekly: `每週${(r.days||[]).map(d=>DAYS[d]).join('/')}`, interval: `每${r.interval}天` };
+  const times = (r.times || [r.time]).filter(Boolean);
+  return `
+  <div class="list-item">
+    <div class="item-icon">${r.type === 'med' ? '💊' : '🏃'}</div>
+    <div class="item-info">
+      <div class="item-name">${r.name}</div>
+      <div class="item-sub">${times.join('、')} · ${freqLabel[r.freq]||'每天'} ${r.dose?'· '+r.dose:''}</div>
+    </div>
+    <div class="item-actions">
+      <button class="icon-btn" onclick="editReminder('${r.id}')">✏️</button>
+    </div>
+  </div>`;
+}
+
+// ── Render History ────────────────────────────────────────────────
+function renderHistory() {
+  const el = document.getElementById('historyContent');
+  const sorted = [...history].reverse();
+  document.getElementById('historyEmpty').style.display = sorted.length ? 'none' : 'block';
+  el.innerHTML = sorted.slice(0, 100).map(h => `
+    <div class="history-item">
+      <div class="history-dot ${h.status||'skip'}"></div>
+      <div class="history-info">
+        <div class="history-name">${h.name||'未知'}</div>
+        <div class="history-time">${h.date||''}</div>
+      </div>
+      <div class="history-status ${h.status||'skip'}">${h.status==='done'?'已完成':'未完成'}</div>
+    </div>`).join('') || '';
+}
+
+function clearHistory() {
+  if (!confirm('確定要清除所有歷史記錄嗎？')) return;
+  history = [];
+  save();
+  renderHistory();
+  showToast('已清除歷史記錄');
+}
+
+// ── Form ──────────────────────────────────────────────────────────
+let selectedType = 'med';
+let selectedDays = [];
+let extraTimes = [];
+
+function openAdd() {
+  editingId = null;
+  selectedType = 'med';
+  selectedDays = [];
+  extraTimes = [];
+  document.getElementById('formName').value = '';
+  document.getElementById('formDose').value = '';
+  document.getElementById('formTime1').value = '';
+  document.getElementById('formNote').value = '';
+  document.getElementById('formFreq').value = 'daily';
+  document.getElementById('formInterval').value = 2;
+  document.getElementById('editActions').style.display = 'none';
+  document.getElementById('timesContainer').innerHTML =
+    `<input type="time" id="formTime1" style="flex:1; min-width:120px;">`;
+  updateTypeUI();
+  updateDaySelector();
+  showPage('add', null, 'add');
+}
+
+function selectType(t) {
+  selectedType = t;
+  updateTypeUI();
+}
+
+function updateTypeUI() {
+  document.getElementById('typeMed').className = `type-opt med ${selectedType==='med'?'selected':''}`;
+  document.getElementById('typeRehab').className = `type-opt rehab ${selectedType==='rehab'?'selected':''}`;
+  document.getElementById('nameLabel').textContent = selectedType === 'med' ? '藥品名稱' : '復健項目';
+  document.getElementById('formName').placeholder = selectedType === 'med' ? '例如：阿斯匹靈、魚油…' : '例如：手部伸展、步行訓練…';
+  document.getElementById('doseGroup').style.display = selectedType === 'med' ? '' : '';
+  document.getElementById('doseGroup').querySelector('label').textContent = selectedType === 'med' ? '劑量 / 說明' : '說明 / 組數';
+  document.getElementById('formDose').placeholder = selectedType === 'med' ? '例如：1錠、飯後服用…' : '例如：10下 × 3組…';
+}
+
+function addTimeField() {
+  const c = document.getElementById('timesContainer');
+  const idx = c.querySelectorAll('input').length + 1;
+  if (idx > 4) return;
+  const inp = document.createElement('input');
+  inp.type = 'time';
+  inp.id = `formTime${idx}`;
+  inp.style.cssText = 'flex:1; min-width:120px; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:15px; background:var(--bg); outline:none;';
+  c.appendChild(inp);
+}
+
+function updateDaySelector() {
+  const f = document.getElementById('formFreq').value;
+  document.getElementById('dayGroup').style.display = f === 'weekly' ? '' : 'none';
+  document.getElementById('formInterval').style.display = f === 'interval' ? '' : 'none';
+}
+
+function toggleDay(el, d) {
+  if (selectedDays.includes(d)) {
+    selectedDays = selectedDays.filter(x => x !== d);
+    el.classList.remove('selected');
+  } else {
+    selectedDays.push(d);
+    el.classList.add('selected');
+  }
+}
+
+function saveReminder() {
+  const name = document.getElementById('formName').value.trim();
+  if (!name) { showToast('⚠️ 請輸入名稱'); return; }
+
+  const timeInputs = document.getElementById('timesContainer').querySelectorAll('input[type=time]');
+  const times = [...timeInputs].map(i => i.value).filter(Boolean);
+  if (!times.length) { showToast('⚠️ 請設定提醒時間'); return; }
+
+  const freq = document.getElementById('formFreq').value;
+  if (freq === 'weekly' && !selectedDays.length) { showToast('⚠️ 請選擇至少一天'); return; }
+
+  const obj = {
+    id: editingId || Date.now().toString(),
+    type: selectedType,
+    name,
+    dose: document.getElementById('formDose').value.trim(),
+    times,
+    time: times[0],
+    freq,
+    days: freq === 'weekly' ? [...selectedDays] : [],
+    interval: parseInt(document.getElementById('formInterval').value) || 2,
+    note: document.getElementById('formNote').value.trim(),
+    createdAt: editingId ? (reminders.find(r=>r.id===editingId)||{}).createdAt || new Date().toISOString() : new Date().toISOString(),
+  };
+
+  if (editingId) {
+    reminders = reminders.map(r => r.id === editingId ? obj : r);
+  } else {
+    reminders.push(obj);
+  }
+  save();
+  renderToday();
+  renderList();
+  scheduleAlarms();
+  showToast(editingId ? '✅ 已更新提醒' : '✅ 已新增提醒');
+  showPage('list', null, 'list');
+}
+
+function editReminder(id) {
+  const r = reminders.find(x => x.id === id);
+  if (!r) return;
+  editingId = id;
+  selectedType = r.type;
+  selectedDays = [...(r.days || [])];
+  document.getElementById('formName').value = r.name;
+  document.getElementById('formDose').value = r.dose || '';
+  document.getElementById('formNote').value = r.note || '';
+  document.getElementById('formFreq').value = r.freq || 'daily';
+  document.getElementById('formInterval').value = r.interval || 2;
+
+  // times
+  const times = r.times || [r.time];
+  const c = document.getElementById('timesContainer');
+  c.innerHTML = '';
+  times.filter(Boolean).forEach((t, i) => {
+    const inp = document.createElement('input');
+    inp.type = 'time'; inp.value = t;
+    inp.id = `formTime${i+1}`;
+    inp.style.cssText = 'flex:1; min-width:120px; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:15px; background:var(--bg); outline:none;';
+    c.appendChild(inp);
+  });
+
+  updateTypeUI();
+  updateDaySelector();
+
+  // set day buttons
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    const d = btn.getAttribute('onclick').match(/'(\d)'/)[1];
+    btn.classList.toggle('selected', selectedDays.includes(d));
+  });
+
+  document.getElementById('editActions').style.display = 'block';
+  showPage('add', null, 'add');
+}
+
+function deleteReminder() {
+  if (!editingId) return;
+  if (!confirm('確定要刪除此提醒嗎？')) return;
+  reminders = reminders.filter(r => r.id !== editingId);
+  delete todayLog[editingId];
+  save();
+  renderToday();
+  renderList();
+  showToast('已刪除');
+  showPage('list', null, 'list');
+  editingId = null;
+}
+
+// ── Pages / Nav ───────────────────────────────────────────────────
+function showPage(name, tabEl, navName) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  const tabMap = { today: 0, list: 1, history: 2, add: -1 };
+  const tabs = document.querySelectorAll('.tab');
+  if (tabMap[name] >= 0 && tabs[tabMap[name]]) tabs[tabMap[name]].classList.add('active');
+  if (navName) {
+    const navEl = document.getElementById(`nav-${navName}`);
+    if (navEl) navEl.classList.add('active');
+  }
+
+  if (name === 'today') renderToday();
+  if (name === 'list') renderList();
+  if (name === 'history') renderHistory();
+  document.getElementById('saveBar').classList.toggle('visible', name === 'add');
+}
+
+// ── Alarms ────────────────────────────────────────────────────────
+function scheduleAlarms() {
+  // Poll every minute — check if any alarm time matches now (within same minute)
+  const now = new Date();
+  const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const today = now.toDateString();
+  reminders.filter(isDueToday).forEach(r => {
+    (r.times || [r.time]).filter(Boolean).forEach(t => {
+      if (t !== hhmm) return;
+      const fireKey = `${r.id}_${t}_${today}`;
+      if (firedAlarms[fireKey]) return; // already fired this minute
+      firedAlarms[fireKey] = true;
+      triggerAlarm(r, t);
+    });
+  });
+}
+
+function playAlarmSound() {
+  try {
+    const ctx = getAudioCtx();
+    ctx.resume().then(() => {
+      function beep(freq, start, dur) {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = freq; o.type = 'sine';
+        g.gain.setValueAtTime(0.7, ctx.currentTime + start);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        o.start(ctx.currentTime + start);
+        o.stop(ctx.currentTime + start + dur + 0.05);
+      }
+      function tripBeep(offset) {
+        beep(880, offset,       0.15);
+        beep(880, offset + 0.2, 0.15);
+        beep(1100,offset + 0.4, 0.35);
+      }
+      tripBeep(0); tripBeep(0.9); tripBeep(1.8);
+    });
+    if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 600, 200, 400]);
+  } catch(e) {}
+}
+
+function triggerAlarm(r, t) {
+  currentAlarm = { r, t };
+  document.getElementById('alarmIcon').textContent = r.type === 'med' ? '💊' : '🏃';
+  document.getElementById('alarmTitle').textContent = `提醒：${r.name}`;
+  document.getElementById('alarmDesc').textContent =
+    `${t} ${r.dose ? '· ' + r.dose : ''} ${r.note ? '· ' + r.note : ''}`;
+  document.getElementById('alarmModal').classList.add('show');
+  playAlarmSound();
+  if (Notification.permission === 'granted') {
+    new Notification(`💊 ${r.name}`, {
+      body: `${t} 提醒${r.dose ? ' · ' + r.dose : ''}`,
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💊</text></svg>'
+    });
+  }
+}
+
+function confirmAlarm() {
+  if (currentAlarm) {
+    const key = currentAlarm.r.id + '_' + currentAlarm.t;
+    todayLog[key] = 'done';
+    save();
+    renderToday();
+  }
+  document.getElementById('alarmModal').classList.remove('show');
+  showToast('✅ 已標記完成');
+  currentAlarm = null;
+}
+
+function snoozeAlarm() {
+  if (currentAlarm) {
+    const { r, t } = currentAlarm;
+    // Snooze: re-fire after 10 min using setTimeout (user just tapped = audio allowed)
+    setTimeout(() => triggerAlarm(r, t), 10 * 60 * 1000);
+    // Remove the fired marker so polling won't re-block it
+    const today = new Date().toDateString();
+    delete firedAlarms[`${r.id}_${t}_${today}`];
+  }
+  document.getElementById('alarmModal').classList.remove('show');
+  showToast('⏰ 已延後10分鐘');
+  currentAlarm = null;
+}
+
+// ── Notification Setup ────────────────────────────────────────────
+function openNotifSetup() {
+  document.getElementById('topicDisplay').textContent = NTFY_TOPIC;
+  document.getElementById('ntfySubscribeBtn').href = 'ntfy://' + NTFY_TOPIC;
+  document.getElementById('appUrlInput').value = APP_URL;
+  renderCronJobs();
+  document.getElementById('notifSetupModal').classList.add('show');
+}
+
+function saveAppUrl() {
+  const v = document.getElementById('appUrlInput').value.trim().replace(/\/$/, '');
+  if (v) {
+    APP_URL = v;
+    localStorage.setItem('appUrl', v);
+    renderCronJobs();
+    showToast('✅ 網址已儲存');
+  }
+}
+
+function renderCronJobs() {
+  const topic = NTFY_TOPIC;
+  const appUrl = APP_URL;
+  const slots = reminders.filter(isDueToday).flatMap(r =>
+    (r.times || [r.time]).filter(Boolean).map(t => ({ r, t }))
+  ).sort((a, b) => a.t.localeCompare(b.t));
+
+  const html = slots.map(({ r, t }) => {
+    const [h, m] = t.split(':').map(Number);
+    const cron = `${m} ${h} * * *`;
+    const icon = r.type === 'med' ? '💊' : '🏃';
+    const body = `${icon} ${r.name}${r.dose ? ' · ' + r.dose : ''}`;
+    const clickUrl = `${appUrl}/?log=${r.id}_${t}`;
+    const tags = r.type === 'med' ? 'pill' : 'runner';
+    const copyText = [
+      `URL: https://ntfy.sh/${topic}`,
+      `Method: POST`,
+      `Body: ${body}`,
+      `---Headers---`,
+      `Title: ${r.name} ${t}`,
+      `Tags: ${tags}`,
+      `Click: ${clickUrl}`
+    ].join('\n');
+
+    return `<div class="cron-card">
+      <div class="cron-card-header">
+        <span>${icon} ${r.name}</span>
+        <span class="time-badge">${t}</span>
+      </div>
+      <div class="cron-row"><span class="cron-label">Cron 時間</span><span class="cron-val">${cron}</span></div>
+      <div class="cron-row"><span class="cron-label">URL</span><span class="cron-val">https://ntfy.sh/${topic}</span></div>
+      <div class="cron-row"><span class="cron-label">Method</span><span class="cron-val">POST</span></div>
+      <div class="cron-row"><span class="cron-label">Body</span><span class="cron-val">${body}</span></div>
+      <div class="cron-row"><span class="cron-label">Header:<br>Title</span><span class="cron-val">${r.name} ${t}</span></div>
+      <div class="cron-row"><span class="cron-label">Header:<br>Tags</span><span class="cron-val">${tags}</span></div>
+      <div class="cron-row"><span class="cron-label">Header:<br>Click</span><span class="cron-val">${clickUrl}</span></div>
+      <button class="copy-btn" onclick="copyConfig(${JSON.stringify(copyText)}, this)">複製設定</button>
+    </div>`;
+  }).join('');
+
+  document.getElementById('cronJobsDisplay').innerHTML = html || '<p style="color:var(--muted);font-size:13px;">無提醒資料</p>';
+}
+
+function copyConfig(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '已複製 ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '複製設定'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => showToast('請手動複製'));
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── Hide hosting banners ──────────────────────────────────────────
+(function hideBanner() {
+  const style = document.createElement('style');
+  // Override tiiny.host's margin-bottom injection on body
+  style.textContent = 'body { margin-bottom: 0 !important; padding-bottom: 80px !important; } [class*="tiiny"],[id*="tiiny"],iframe[src*="tiiny"] { display:none!important; }';
+  document.head.appendChild(style);
+
+  function killBanner() {
+    // tiiny.host injects a classless div with z-index:9999 as first body child
+    document.querySelectorAll('body > div').forEach(el => {
+      if (!el.id && !el.className && (el.style.zIndex === '9999' || (el.getAttribute('style')||'').includes('z-index:9999'))) {
+        el.style.cssText = 'display:none!important';
+      }
+    });
+    // Also remove named tiiny elements
+    document.querySelectorAll('[class*="tiiny"],[id*="tiiny"],iframe[src*="tiiny"]').forEach(e => e.remove());
+    // Reset body margin-bottom that tiiny.host sets
+    if (document.body.style.marginBottom) document.body.style.removeProperty('margin-bottom');
+  }
+
+  const obs = new MutationObserver(killBanner);
+  obs.observe(document.body, {childList:true, subtree:false, attributes:true, attributeFilter:['style']});
+  window.addEventListener('load', () => { killBanner(); setTimeout(killBanner, 300); setTimeout(killBanner, 800); });
+})();
+
+// ── URL ?log=ID_HH:MM (auto-mark done when tapping ntfy notification) ──
+(function handleAutoLog() {
+  const params = new URLSearchParams(window.location.search);
+  const logParam = params.get('log');
+  if (!logParam) return;
+  // format: REMINDERID_HH:MM  e.g. 1779076323609_10:00
+  const underscore = logParam.indexOf('_');
+  if (underscore < 0) return;
+  const id = logParam.slice(0, underscore);
+  const t  = logParam.slice(underscore + 1);
+  const key = id + '_' + t;
+  if (todayLog[key] !== 'done') {
+    const r = reminders.find(x => x.id === id);
+    if (r) {
+      todayLog[key] = 'done';
+      save();
+      setTimeout(() => showToast(`✅ 已記錄：${r.name} ${t}`), 600);
+    }
+  }
+  window.history.replaceState({}, '', window.location.pathname);
+})();
+
+// ── URL Import (open URL with #import=BASE64 to auto-load data) ───
+(function() {
+  const hash = window.location.hash;
+  if (hash.startsWith('#import=')) {
+    try {
+      const decoded = JSON.parse(atob(hash.slice(8)));
+      if (decoded.reminders && decoded.reminders.length) {
+        localStorage.setItem('reminders', JSON.stringify(decoded.reminders));
+        history.replaceState(null, null, window.location.pathname);
+        showToast('✅ 資料匯入成功！');
+      }
+    } catch(e) {}
+  }
+})();
+
+// ── Start ─────────────────────────────────────────────────────────
+init();
+setInterval(updateHeader, 60000);
+setInterval(scheduleAlarms, 60000); // check every minute
+</script>
+</body>
+</html>
