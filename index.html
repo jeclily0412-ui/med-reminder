@@ -247,7 +247,7 @@
 <header>
   <h1>💊 用藥復健提醒</h1>
   <div class="date" id="headerDate"></div>
-  <button class="notif-btn" onclick="openNotifSetup()" title="設定推播通知">🔔</button>
+  <button class="notif-btn" onclick="setupPush()" title="開啟推播通知">🔔</button>
 </header>
 
 <div class="tabs">
@@ -1038,6 +1038,59 @@ function showToast(msg) {
 init();
 setInterval(updateHeader, 60000);
 setInterval(scheduleAlarms, 60000); // check every minute
+
+// ── Web Push ──────────────────────────────────────────────────────
+const VAPID_PUBLIC = 'BPXraDbJsQNdnZaB1GDOqU1rT7jURMNN68LrNhSO23AXaFEroqjQ_X1j1gpOYoGH0zES5rRfT6iqDS-qjLk-wT0';
+const SUB_TOPIC = 'med-jec-sub-7k4x9m2p';
+
+function urlB64ToUint8(b64) {
+  const p = '='.repeat((4 - b64.length % 4) % 4);
+  const b = (b64 + p).replace(/-/g, '+').replace(/_/g, '/');
+  const r = atob(b); const o = new Uint8Array(r.length);
+  for (let i = 0; i < r.length; i++) o[i] = r.charCodeAt(i);
+  return o;
+}
+
+async function setupPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('./sw.js');
+    await navigator.serviceWorker.ready;
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { showToast('⚠️ 請允許通知權限'); return; }
+    const existing = await reg.pushManager.getSubscription();
+    let sub = existing;
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlB64ToUint8(VAPID_PUBLIC)
+      });
+    }
+    // Save subscription to ntfy relay topic
+    await fetch('https://ntfy.sh/' + SUB_TOPIC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sub.toJSON())
+    });
+    showToast('🔔 推播通知已啟用！');
+  } catch(e) { console.error('Push setup failed:', e); }
+}
+
+// Auto-setup push when app opens (if already have SW)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.pushManager.getSubscription().then(sub => {
+      if (sub) {
+        // Refresh subscription in relay
+        fetch('https://ntfy.sh/' + SUB_TOPIC, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sub.toJSON())
+        });
+      }
+    });
+  });
+}
 </script>
 </body>
 </html>
