@@ -1045,8 +1045,10 @@ async function setupPush(){
     await navigator.serviceWorker.ready;
     const perm=await Notification.requestPermission();
     if(perm!=='granted'){showToast('⚠️ 請允許通知權限');return;}
-    let sub=await reg.pushManager.getSubscription();
-    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlB64(VAPID_PUBLIC)});
+    // Always unsubscribe first to ensure key match
+    const existing=await reg.pushManager.getSubscription();
+    if(existing) await existing.unsubscribe();
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlB64(VAPID_PUBLIC)});
     await fetch('https://ntfy.sh/'+SUB_TOPIC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sub.toJSON())});
     showToast('🔔 推播通知已啟用！');
   }catch(e){showToast('⚠️ '+e.message);console.error(e);}
